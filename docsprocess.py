@@ -1,5 +1,6 @@
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+import chromadb
 def loadpdf():
     reader = PdfReader("AIML SYLLABUS.PDF")
     print(f"Number of pages in pdf: {len(reader.pages)}")
@@ -14,4 +15,4 @@ def loadpdf():
         return None
     
 texts = loadpdf()
-print(texts)
+# print(texts)
