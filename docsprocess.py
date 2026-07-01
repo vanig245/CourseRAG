@@ -1,6 +1,10 @@
+import os
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import chromadb
+from langchain_groq import ChatGroq
+from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+
 def loadpdf():
     reader = PdfReader("AIML SYLLABUS.PDF")
     print(f"Number of pages in pdf: {len(reader.pages)}")
@@ -16,3 +20,13 @@ def loadpdf():
     
 texts = loadpdf()
 # print(texts)
+
+if texts:
+    print("embedding texts and saving it to chromaDb")
+
+    model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    vector_db = Chroma.from_texts(
+        texts = texts,
+        embedding = model,
+        persist_directory="./knowledge_base"
+    )
