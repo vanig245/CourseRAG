@@ -18,24 +18,28 @@ vector_db = Chroma(
     embedding_function = embedding_model
 )
 
-question = input("Ask me anything :")
-retrieved_pdf = vector_db.similarity_search(question, k = 4)
-context = "\n\n".join([doc.page_content for doc in retrieved_pdf])
+def chat() -> str:
+    question = input("Ask me anything :")
+    retrieved_pdf = vector_db.similarity_search(question, k = 4)
+    context = "\n\n".join([doc.page_content for doc in retrieved_pdf])
 
-print(context)
+    print(context)
 
-prompt = f"""
-You are an AI teaching assistant. Answer the user's question based only on the following context from the syllabus.
-If the answer is not in the context, do not make things up. Just say "I don't know about this topic based on the provided syllabus".
+    prompt = f"""
+    You are an AI teaching assistant. Answer the user's question based only on the following context from the syllabus.
+    If the answer is not in the context, do not make things up. Just say "I don't know about this topic based on the provided syllabus".
 
-Context:
-{context}
+    Context:
+    {context}
 
-Question:
-{question}
+    Question:
+    {question}
 
-Answer:
-"""
+    Answer:
+    """
 
-response = llm.invoke(prompt)
-print(response.content)
+    response = llm.invoke(prompt)
+    return response.content
+
+response = chat()
+print(response)
