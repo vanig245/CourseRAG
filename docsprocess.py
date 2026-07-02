@@ -8,12 +8,18 @@ from langchain_huggingface import HuggingFaceEmbeddings
 def loadpdf():
     reader = PdfReader("AIML SYLLABUS.PDF")
     print(f"Number of pages in pdf: {len(reader.pages)}")
+
+    chunk_texts = []
     if len(reader.pages) > 0:
-        page = reader.pages[31]
-        text = page.extract_text()
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size = 1000, chunk_overlap = 200)
-        texts = text_splitter.split_text(text)
-        return texts
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                text_splitter = RecursiveCharacterTextSplitter(chunk_size = 1000, chunk_overlap = 200)
+                texts = text_splitter.split_text(text)
+                chunk_texts.extend(texts)
+                
+        return chunk_texts
+
     else: 
         print("pdf has no pages. Please try again!")
         return None
