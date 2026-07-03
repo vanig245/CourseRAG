@@ -10,9 +10,7 @@ Upload a syllabus, manual, or report and get instant, hallucination-free answers
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=flat&logo=langchain&logoColor=white)](https://python.langchain.com/)
 [![Groq](https://img.shields.io/badge/Groq-Llama_3.1_8B-F55036?style=flat)](https://groq.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[Overview](#-overview) • [Features](#-features) • [Tech Stack](#-tech-stack) • [Getting Started](#-getting-started) • [Usage](#-usage) • [Project Structure](#-project-structure) • [Roadmap](#-roadmap)
 
 </div>
 
@@ -181,6 +179,6 @@ Contributions are welcome. Please open an issue to discuss significant changes b
 
 <div align="center">
 
-Built with FastAPI, LangChain, and Groq ⚡
+Built with FastAPI, LangChain, and Groq
 
 </div>
