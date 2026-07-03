@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic RAG Assistant</title>
+    <title>RAG Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -13,7 +13,7 @@
     <header class="bg-blue-600 text-white p-4 shadow-md flex items-center justify-between">
         <div class="flex items-center gap-3">
             <i data-lucide="layers" class="w-6 h-6"></i>
-            <h1 class="text-xl font-bold">Dynamic RAG Assistant</h1>
+            <h1 class="text-xl font-bold">RAG Assistant</h1>
         </div>
         <div id="status-badge" class="bg-blue-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 transition-colors">
             <div class="w-2 h-2 rounded-full bg-red-400" id="status-dot"></div>
@@ -67,11 +67,10 @@
     </div>
 
     <script>
-        // Initialize Icons
+
         lucide.createIcons();
         let currentFileName = "";
 
-        // --- UPLOAD LOGIC ---
         function updateFileName() {
             const input = document.getElementById('pdf-upload');
             const display = document.getElementById('file-name-display');
@@ -95,12 +94,10 @@
             const formData = new FormData();
             formData.append("file", file);
 
-            // Set UI to loading state
             btn.disabled = true;
             btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Processing...`;
 
             try {
-                // Call the FastAPI /upload endpoint
                 const response = await fetch('http://127.0.0.1:8000/upload', {
                     method: 'POST',
                     body: formData
@@ -108,16 +105,13 @@
 
                 if (!response.ok) throw new Error("Upload failed");
 
-                // Switch UI from Upload to Chat
                 document.getElementById('upload-section').classList.add('hidden');
                 document.getElementById('chat-section').classList.remove('hidden');
                 document.getElementById('chat-section').classList.add('flex');
-                
-                // Update the Status Badge in the header
+
                 document.getElementById('status-dot').classList.replace('bg-red-400', 'bg-green-400');
                 document.getElementById('status-text').innerText = "Database Ready";
 
-                // Add the initial welcome message from the AI
                 appendMessage(`Successfully processed **${currentFileName}**. Ask me anything about it!`, 'bot');
 
             } catch (error) {
@@ -128,7 +122,6 @@
             }
         }
 
-        // --- CHAT LOGIC ---
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
@@ -141,18 +134,15 @@
             const question = userInput.value.trim();
             if (!question) return;
 
-            // 1. Add user question to screen
             appendMessage(question, 'user');
             userInput.value = '';
             
-            // Disable inputs while loading
             userInput.disabled = true;
             sendBtn.disabled = true;
 
             const loadingId = appendLoading();
 
             try {
-                // 2. Call the FastAPI /chat endpoint
                 const response = await fetch('http://127.0.0.1:8000/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -162,7 +152,6 @@
                 if (!response.ok) throw new Error('Network error');
                 const data = await response.json();
                 
-                // 3. Remove loading animation and show AI answer
                 document.getElementById(loadingId).remove();
                 appendMessage(data.answer, 'bot');
                 
@@ -170,7 +159,6 @@
                 document.getElementById(loadingId).remove();
                 appendMessage("⚠️ Error: Could not reach backend. Is FastAPI running?", 'error');
             } finally {
-                // Re-enable inputs
                 userInput.disabled = false;
                 sendBtn.disabled = false;
                 userInput.focus();
@@ -187,8 +175,7 @@
             
             const bubbleBg = sender === 'user' ? 'bg-gray-800 text-white' : sender === 'error' ? 'bg-red-50 text-red-800 border-red-100' : 'bg-white border-gray-100';
             const bubbleRadius = sender === 'user' ? 'rounded-tr-none' : 'rounded-tl-none';
-            
-            // Parse markdown for bot messages
+
             const parsedContent = sender === 'bot' ? marked.parse(content) : content;
 
             wrapper.innerHTML = `

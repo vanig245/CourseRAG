@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
@@ -31,6 +32,12 @@ llm = ChatGroq(
 )
 
 vector_db = None
+
+@app.get("/")
+async def serve_frontend():
+    if os.path.exists("index.html"):
+        return FileResponse("index.html")
+    return {"error": "index.html not found. Make sure it is in the same folder!"}
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):

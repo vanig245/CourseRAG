@@ -5,7 +5,7 @@ def generate_answer(question: str, vector_db, llm) -> str:
 
     prompt = f"""
     You are an AI teaching assistant. Answer the user's question based only on the following context.
-    If the answer is not in the context, do not make things up. Just say "I don't know based on the provided document".
+    If the answer is not in the context, do not make things up. Just say "I don't know about this topic based on the provided document".
 
     Context:
     {context}
