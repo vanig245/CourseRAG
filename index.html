@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic RAG Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col font-sans text-gray-800">
+
+    <header class="bg-blue-600 text-white p-4 shadow-md flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <i data-lucide="layers" class="w-6 h-6"></i>
+            <h1 class="text-xl font-bold">Dynamic RAG Assistant</h1>
+        </div>
+        <div id="status-badge" class="bg-blue-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 transition-colors">
+            <div class="w-2 h-2 rounded-full bg-red-400" id="status-dot"></div>
+            <span id="status-text">No Document Loaded</span>
+        </div>
+    </header>
+
+    <main id="upload-section" class="flex-1 flex flex-col items-center justify-center p-6">
+        <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200 max-w-md w-full text-center">
+            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="file-up" class="w-8 h-8"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Upload a Document</h2>
+            <p class="text-gray-500 mb-6">Upload any PDF syllabus, manual, or report to start chatting with it.</p>
+            
+            <input type="file" id="pdf-upload" accept="application/pdf" class="hidden" onchange="updateFileName()">
+            <label for="pdf-upload" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-4 block mb-4 hover:bg-gray-50 transition-colors">
+                <span id="file-name-display" class="text-gray-600 font-medium">Click to select PDF</span>
+            </label>
+            
+            <button id="process-btn" onclick="uploadPDF()" disabled class="w-full bg-blue-600 disabled:bg-gray-300 text-white py-3 rounded-lg font-medium transition-colors flex justify-center items-center gap-2">
+                <span>Process Document</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </main>
+
+    <div id="chat-section" class="hidden flex-col h-full flex-1 overflow-hidden">
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 max-w-4xl w-full mx-auto" id="chat-container">
+            </main>
+
+        <footer class="bg-white border-t border-gray-200 p-4 sticky bottom-0">
+            <div class="max-w-4xl mx-auto flex gap-3">
+                <input 
+                    type="text" 
+                    id="user-input" 
+                    class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                    placeholder="Ask a question about the document..." 
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button 
+                    onclick="sendMessage()" 
+                    id="send-btn" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                >
+                    <span>Send</span>
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+        let currentFileName = "";
+
+        // --- UPLOAD LOGIC ---
+        function updateFileName() {
+            const input = document.getElementById('pdf-upload');
+            const display = document.getElementById('file-name-display');
+            const btn = document.getElementById('process-btn');
+            
+            if (input.files.length > 0) {
+                currentFileName = input.files[0].name;
+                display.innerHTML = `<i data-lucide="file-text" class="inline w-4 h-4 mr-1"></i> ${currentFileName}`;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+
+        async function uploadPDF() {
+            const fileInput = document.getElementById('pdf-upload');
+            const btn = document.getElementById('process-btn');
+            
+            if (fileInput.files.length === 0) return;
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append("file", file);
+
+            // Set UI to loading state
+            btn.disabled = true;
+            btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Processing...`;
+
+            try {
+                // Call the FastAPI /upload endpoint
+                const response = await fetch('http://127.0.0.1:8000/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("Upload failed");
+
+                // Switch UI from Upload to Chat
+                document.getElementById('upload-section').classList.add('hidden');
+                document.getElementById('chat-section').classList.remove('hidden');
+                document.getElementById('chat-section').classList.add('flex');
+                
+                // Update the Status Badge in the header
+                document.getElementById('status-dot').classList.replace('bg-red-400', 'bg-green-400');
+                document.getElementById('status-text').innerText = "Database Ready";
+
+                // Add the initial welcome message from the AI
+                appendMessage(`Successfully processed **${currentFileName}**. Ask me anything about it!`, 'bot');
+
+            } catch (error) {
+                alert("Error processing document. Ensure your FastAPI backend is running.");
+                btn.disabled = false;
+                btn.innerHTML = `<span>Process Document</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+                lucide.createIcons();
+            }
+        }
+
+        // --- CHAT LOGIC ---
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') sendMessage();
+        }
+
+        async function sendMessage() {
+            const question = userInput.value.trim();
+            if (!question) return;
+
+            // 1. Add user question to screen
+            appendMessage(question, 'user');
+            userInput.value = '';
+            
+            // Disable inputs while loading
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+
+            const loadingId = appendLoading();
+
+            try {
+                // 2. Call the FastAPI /chat endpoint
+                const response = await fetch('http://127.0.0.1:8000/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: question })
+                });
+
+                if (!response.ok) throw new Error('Network error');
+                const data = await response.json();
+                
+                // 3. Remove loading animation and show AI answer
+                document.getElementById(loadingId).remove();
+                appendMessage(data.answer, 'bot');
+                
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                appendMessage("⚠️ Error: Could not reach backend. Is FastAPI running?", 'error');
+            } finally {
+                // Re-enable inputs
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        function appendMessage(content, sender) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex gap-4 mb-6 ${sender === 'user' ? 'flex-row-reverse' : ''}`;
+            
+            const iconBg = sender === 'user' ? 'bg-gray-800' : sender === 'error' ? 'bg-red-100' : 'bg-blue-100';
+            const iconColor = sender === 'user' ? 'text-white' : sender === 'error' ? 'text-red-600' : 'text-blue-600';
+            const iconName = sender === 'user' ? 'user' : sender === 'error' ? 'alert-circle' : 'bot';
+            
+            const bubbleBg = sender === 'user' ? 'bg-gray-800 text-white' : sender === 'error' ? 'bg-red-50 text-red-800 border-red-100' : 'bg-white border-gray-100';
+            const bubbleRadius = sender === 'user' ? 'rounded-tr-none' : 'rounded-tl-none';
+            
+            // Parse markdown for bot messages
+            const parsedContent = sender === 'bot' ? marked.parse(content) : content;
+
+            wrapper.innerHTML = `
+                <div class="w-10 h-10 rounded-full ${iconBg} flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="${iconName}" class="w-6 h-6 ${iconColor}"></i>
+                </div>
+                <div class="${bubbleBg} p-4 rounded-lg ${bubbleRadius} shadow-sm border max-w-[85%] prose prose-sm md:prose-base">
+                    ${parsedContent}
+                </div>
+            `;
+            chatContainer.appendChild(wrapper);
+            lucide.createIcons();
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function appendLoading() {
+            const id = 'loading-' + Date.now();
+            const wrapper = document.createElement('div');
+            wrapper.id = id;
+            wrapper.className = `flex gap-4 mb-6`;
+            wrapper.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="bot" class="w-6 h-6 text-blue-600"></i>
+                </div>
+                <div class="bg-white p-4 rounded-lg rounded-tl-none shadow-sm border border-gray-100 flex items-center gap-2">
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                </div>
+            `;
+            chatContainer.appendChild(wrapper);
+            lucide.createIcons();
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return id;
+        }
+    </script>
+</body>
+</html>
